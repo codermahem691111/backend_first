@@ -7,6 +7,20 @@ const cors = require("cors");
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// Accept MONGO_URI (preferred) or MONGODB_URI, and strip stray spaces/quotes
+const MONGO_URI = (process.env.MONGO_URI || process.env.MONGODB_URI || "")
+  .trim()
+  .replace(/^["']|["']$/g, "");
+
+if (!MONGO_URI) {
+  console.error(
+    "MONGO_URI is not set.\n" +
+      "- Local: add it to backend/.env\n" +
+      "- Render: add it under Environment (Key: MONGO_URI, Value: your Atlas connection string)"
+  );
+  process.exit(1);
+}
+
 // CLIENT_URL can hold several origins, separated by commas
 const allowedOrigins = (process.env.CLIENT_URL || "http://localhost:3000")
   .split(",")
@@ -28,7 +42,7 @@ const todoSchema = new mongoose.Schema(
 const Todo = mongoose.model("Todo", todoSchema);
 
 // ---------- Helpers ----------
-const pick = (body) => {
+const pick = (body = {}) => {
   const data = {};
   if (body.title !== undefined) data.title = body.title;
   if (body.completed !== undefined) data.completed = body.completed;
@@ -90,7 +104,7 @@ app.delete("/api/todos/:id", async (req, res) => {
 
 // ---------- Start ----------
 mongoose
-  .connect(process.env.MONGODB_URI)
+  .connect(MONGO_URI)
   .then(() => {
     console.log("MongoDB connected");
     app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
